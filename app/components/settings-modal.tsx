@@ -1,25 +1,15 @@
 "use client"
 
 import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Plus, X, Globe, Bell, Palette, Database } from "lucide-react"
-
-interface Settings {
-  defaultCurrency: string
-  budgetAlerts: boolean
-  offlineMode: boolean
-  voiceInput: boolean
-  categories: string[]
-  currencies: string[]
-}
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Plus, X, Palette, Database, Target } from "lucide-react"
+import type { Settings } from "../page"
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -28,17 +18,52 @@ interface SettingsModalProps {
   onUpdateSettings: (settings: Settings) => void
 }
 
+const currencies = [
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "AUD",
+  "CAD",
+  "CHF",
+  "CNY",
+  "INR",
+  "KRW",
+  "MXN",
+  "BRL",
+  "RUB",
+  "ZAR",
+  "SGD",
+  "HKD",
+  "NOK",
+  "SEK",
+  "DKK",
+  "PLN",
+]
+
+const defaultCategories = [
+  "Food",
+  "Transport",
+  "Accommodation",
+  "Religious Items",
+  "Donations",
+  "Souvenirs",
+  "Medical",
+  "Entertainment",
+  "Shopping",
+  "Other",
+]
+
 export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings }: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState<Settings>(settings)
   const [newCategory, setNewCategory] = useState("")
-  const [newCurrency, setNewCurrency] = useState("")
 
   const handleSave = () => {
     onUpdateSettings(localSettings)
     onClose()
   }
 
-  const addCategory = () => {
+  const handleAddCategory = () => {
     if (newCategory.trim() && !localSettings.categories.includes(newCategory.trim())) {
       setLocalSettings((prev) => ({
         ...prev,
@@ -48,51 +73,42 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings }: S
     }
   }
 
-  const removeCategory = (category: string) => {
+  const handleRemoveCategory = (categoryToRemove: string) => {
     setLocalSettings((prev) => ({
       ...prev,
-      categories: prev.categories.filter((c) => c !== category),
+      categories: prev.categories.filter((cat) => cat !== categoryToRemove),
     }))
   }
 
-  const addCurrency = () => {
-    if (newCurrency.trim() && !localSettings.currencies.includes(newCurrency.trim().toUpperCase())) {
-      setLocalSettings((prev) => ({
-        ...prev,
-        currencies: [...prev.currencies, newCurrency.trim().toUpperCase()],
-      }))
-      setNewCurrency("")
-    }
-  }
-
-  const removeCurrency = (currency: string) => {
-    if (localSettings.currencies.length > 1 && currency !== localSettings.defaultCurrency) {
-      setLocalSettings((prev) => ({
-        ...prev,
-        currencies: prev.currencies.filter((c) => c !== currency),
-      }))
-    }
+  const handleResetCategories = () => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      categories: [...defaultCategories],
+    }))
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">Settings</DialogTitle>
+          <DialogTitle className="flex items-center space-x-2">
+            <Palette className="w-5 h-5" />
+            <span>Settings</span>
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* General Settings */}
+          {/* Currency Settings */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Globe className="w-5 h-5" />
-                General
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <Palette className="w-4 h-4" />
+                <span>Currency & Budget</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="default-currency">Default Currency</Label>
+                <Label htmlFor="defaultCurrency">Default Currency</Label>
                 <Select
                   value={localSettings.defaultCurrency}
                   onValueChange={(value) => setLocalSettings((prev) => ({ ...prev, defaultCurrency: value }))}
@@ -101,7 +117,7 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings }: S
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {localSettings.currencies.map((currency) => (
+                    {currencies.map((currency) => (
                       <SelectItem key={currency} value={currency}>
                         {currency}
                       </SelectItem>
@@ -109,162 +125,142 @@ export function SettingsModal({ isOpen, onClose, settings, onUpdateSettings }: S
                   </SelectContent>
                 </Select>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Notifications */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Bell className="w-5 h-5" />
-                Notifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="budget-alerts">Budget Alerts</Label>
-                  <p className="text-sm text-gray-600">Get notified when approaching budget limits</p>
-                </div>
-                <Switch
-                  id="budget-alerts"
-                  checked={localSettings.budgetAlerts}
-                  onCheckedChange={(checked) => setLocalSettings((prev) => ({ ...prev, budgetAlerts: checked }))}
+              <div>
+                <Label htmlFor="budget">Budget Amount</Label>
+                <Input
+                  id="budget"
+                  type="number"
+                  step="0.01"
+                  value={localSettings.budget}
+                  onChange={(e) =>
+                    setLocalSettings((prev) => ({
+                      ...prev,
+                      budget: Number.parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                  className="text-lg"
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="budgetPeriod">Budget Period</Label>
+                <Select
+                  value={localSettings.budgetPeriod}
+                  onValueChange={(value: "daily" | "weekly" | "monthly") =>
+                    setLocalSettings((prev) => ({ ...prev, budgetPeriod: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
 
-          {/* App Features */}
+          {/* Categories Settings */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Palette className="w-5 h-5" />
-                Features
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="offline-mode">Offline Mode</Label>
-                  <p className="text-sm text-gray-600">Work without internet connection</p>
-                </div>
-                <Switch
-                  id="offline-mode"
-                  checked={localSettings.offlineMode}
-                  onCheckedChange={(checked) => setLocalSettings((prev) => ({ ...prev, offlineMode: checked }))}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="voice-input">Voice Input</Label>
-                  <p className="text-sm text-gray-600">Add expenses using voice commands</p>
-                </div>
-                <Switch
-                  id="voice-input"
-                  checked={localSettings.voiceInput}
-                  onCheckedChange={(checked) => setLocalSettings((prev) => ({ ...prev, voiceInput: checked }))}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Categories Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Database className="w-5 h-5" />
-                Expense Categories
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <Target className="w-4 h-4" />
+                <span>Expense Categories</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
+              {/* Add New Category */}
+              <div className="flex space-x-2">
                 <Input
                   placeholder="Add new category"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && addCategory()}
+                  onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
+                  className="flex-1"
                 />
-                <Button onClick={addCategory} size="sm">
+                <Button
+                  onClick={handleAddCategory}
+                  size="icon"
+                  disabled={!newCategory.trim() || localSettings.categories.includes(newCategory.trim())}
+                >
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {localSettings.categories.map((category) => (
-                  <Badge key={category} variant="secondary" className="flex items-center gap-1">
-                    {category}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-4 h-4 p-0 hover:bg-red-100"
-                      onClick={() => removeCategory(category)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </Badge>
-                ))}
+              {/* Current Categories */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Current Categories ({localSettings.categories.length})</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetCategories}
+                    className="text-xs bg-transparent"
+                  >
+                    Reset to Default
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border rounded">
+                  {localSettings.categories.map((category) => (
+                    <Badge key={category} variant="secondary" className="flex items-center space-x-1 pr-1">
+                      <span>{category}</span>
+                      <button
+                        onClick={() => handleRemoveCategory(category)}
+                        className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Currencies Management */}
+          {/* Data Management */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Globe className="w-5 h-5" />
-                Supported Currencies
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <Database className="w-4 h-4" />
+                <span>Data Management</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add currency code (e.g., EUR)"
-                  value={newCurrency}
-                  onChange={(e) => setNewCurrency(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && addCurrency()}
-                />
-                <Button onClick={addCurrency} size="sm">
-                  <Plus className="w-4 h-4" />
-                </Button>
+            <CardContent className="space-y-3">
+              <div className="text-sm text-gray-600">
+                <p>• Data is stored locally in your browser</p>
+                <p>• Export functionality coming soon</p>
+                <p>• Clear browser data will reset all expenses</p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {localSettings.currencies.map((currency) => (
-                  <Badge
-                    key={currency}
-                    variant={currency === localSettings.defaultCurrency ? "default" : "secondary"}
-                    className="flex items-center gap-1"
-                  >
-                    {currency}
-                    {currency === localSettings.defaultCurrency && <span className="text-xs">(default)</span>}
-                    {currency !== localSettings.defaultCurrency && localSettings.currencies.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-4 h-4 p-0 hover:bg-red-100"
-                        onClick={() => removeCurrency(currency)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </Badge>
-                ))}
-              </div>
+              <Button
+                variant="outline"
+                className="w-full bg-transparent"
+                onClick={() => {
+                  if (confirm("This will clear all your expense data. Are you sure?")) {
+                    localStorage.removeItem("spiritual-expenses")
+                    localStorage.removeItem("spiritual-settings")
+                    window.location.reload()
+                  }
+                }}
+              >
+                Clear All Data
+              </Button>
             </CardContent>
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex space-x-3 pt-4">
             <Button variant="outline" onClick={onClose} className="flex-1 bg-transparent">
               Cancel
             </Button>
             <Button
               onClick={handleSave}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700"
+              className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
             >
               Save Settings
             </Button>
